@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { task } from "@renderinc/sdk/workflows";
 
-// Subtask: doubles a number
+// Task used in task chaining: doubles a number
 const double = task({ name: "double" }, function double(x: number): number {
   console.log(`[TASK] Doubling ${x}`);
   const result = x * 2;
@@ -9,7 +9,7 @@ const double = task({ name: "double" }, function double(x: number): number {
   return result;
 });
 
-// Subtask (also callable as root): doubles two numbers and sums them
+// Chained task (also callable as root): doubles two numbers and sums them
 const addDoubledNumbers = task(
   { name: "addDoubledNumbers" },
   async function addDoubledNumbers(a: number, b: number) {
@@ -31,7 +31,7 @@ const addDoubledNumbers = task(
   },
 );
 
-// Subtask (also callable as root): doubles each number in a list
+// Chained task (also callable as root): doubles each number in a list
 const processNumbers = task(
   { name: "processNumbers" },
   async function processNumbers(...numbers: number[]) {
@@ -51,7 +51,7 @@ const processNumbers = task(
       original_numbers: numbers,
       doubled_numbers: doubledResults,
       count: numbers.length,
-      explanation: `Processed ${numbers.length} numbers through the double subtask`,
+      explanation: `Processed ${numbers.length} numbers by chaining runs of double`,
     };
 
     console.log("[WORKFLOW] Complete:", result);

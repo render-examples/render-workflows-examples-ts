@@ -6,7 +6,7 @@ Example projects demonstrating [Render Workflows](https://render.com/docs/workfl
 
 | Example | Description |
 |---------|-------------|
-| [hello-world](./hello-world) | Simplest workflow — learn tasks, subtasks, and orchestration |
+| [hello-world](./hello-world) | Simplest workflow — learn tasks, task chaining, and orchestration |
 | [etl-job](./etl-job) | Extract, transform, load pipeline with retry handling |
 | [data-pipeline](./data-pipeline) | Multi-source data pipeline with enrichment and segmentation |
 | [file-processing](./file-processing) | File ingestion with validation, parsing, and transformation |

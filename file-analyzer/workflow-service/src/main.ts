@@ -16,7 +16,7 @@ const retry = {
   backoffScaling: 1.5,
 };
 
-// Subtask: parse CSV content into structured data
+// Chained task: parse CSV content into structured data
 const parseCsvData = task(
   { name: "parseCsvData", retry },
   function parseCsvData(fileContent: string): ParsedData {
@@ -53,7 +53,7 @@ const parseCsvData = task(
   },
 );
 
-// Subtask: calculate statistics from parsed data
+// Chained task: calculate statistics from parsed data
 const calculateStatistics = task(
   { name: "calculateStatistics", retry },
   function calculateStatistics(data: ParsedData) {
@@ -108,7 +108,7 @@ const calculateStatistics = task(
   },
 );
 
-// Subtask: identify trends and patterns
+// Chained task: identify trends and patterns
 const identifyTrends = task(
   { name: "identifyTrends", retry },
   function identifyTrends(data: ParsedData) {
@@ -160,7 +160,7 @@ const identifyTrends = task(
   },
 );
 
-// Subtask: generate insights report
+// Chained task: generate insights report
 const generateInsights = task(
   { name: "generateInsights", retry },
   async function generateInsights(

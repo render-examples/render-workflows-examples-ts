@@ -5,7 +5,7 @@ The simplest possible workflow example to help you understand the basics of Rend
 ## What you'll learn
 
 - **What is a task?** A function that can be executed as a workflow
-- **What is a subtask?** A task called by another task using `await`
+- **What is task chaining?** A task calling another task using `await`
 - **How to orchestrate:** Combining multiple tasks to create workflows
 
 ## Workflow structure
@@ -13,12 +13,12 @@ The simplest possible workflow example to help you understand the basics of Rend
 ```
 calculateAndProcess (multi-step orchestrator)
   ├── addDoubledNumbers
-  │   ├── double (subtask #1)
-  │   └── double (subtask #2)
+  │   ├── double (chained run #1)
+  │   └── double (chained run #2)
   └── processNumbers
-      ├── double (subtask for item 1)
-      ├── double (subtask for item 2)
-      └── double (subtask for item N)
+      ├── double (chained run for item 1)
+      ├── double (chained run for item 2)
+      └── double (chained run for item N)
 ```
 
 ## Run locally

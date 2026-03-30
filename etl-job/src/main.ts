@@ -29,7 +29,7 @@ const retry = {
   backoffScaling: 1.5,
 };
 
-// Subtask: extract rows from a CSV file
+// Chained task: extract rows from a CSV file
 const extractCsvData = task(
   { name: "extractCsvData", retry },
   function extractCsvData(filePath: string): Record[] {
@@ -66,7 +66,7 @@ const extractCsvData = task(
   },
 );
 
-// Subtask: validate and clean a single record
+// Chained task: validate and clean a single record
 const validateRecord = task(
   { name: "validateRecord", retry },
   function validateRecord(record: Record): ValidatedRecord {
@@ -109,7 +109,7 @@ const validateRecord = task(
   },
 );
 
-// Subtask: validate a batch of records by calling validateRecord for each
+// Chained task: validate a batch of records by calling validateRecord for each
 const transformBatch = task(
   { name: "transformBatch", retry },
   async function transformBatch(records: Record[]) {
@@ -145,7 +145,7 @@ const transformBatch = task(
   },
 );
 
-// Subtask: compute statistics from validated records
+// Chained task: compute statistics from validated records
 const computeStatistics = task(
   { name: "computeStatistics", retry },
   function computeStatistics(validRecords: ValidatedRecord[]) {
