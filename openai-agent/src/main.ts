@@ -157,7 +157,7 @@ const callLlmWithTools = task(
   async function callLlmWithTools(
     messages: ChatCompletionMessageParam[],
     toolDefs: ChatCompletionTool[],
-    model: string = "gpt-4",
+    model: string = "gpt-5.4",
   ) {
     console.log(`[AGENT] Calling ${model} with ${toolDefs.length} tools available`);
 
