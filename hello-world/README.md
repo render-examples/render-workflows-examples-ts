@@ -107,11 +107,6 @@ Use the `retry` option in task config when transient failures should be retried 
 - Confirm dependency install completed from `package.json`
 - Confirm Node.js version is 18+
 
-### Retry behavior confusion
-
-- Retries only apply to tasks configured with `retry`
-- In this example, only `flipCoin` has retry config
-
 ## Resources
 
 - [Render Workflows documentation](https://render.com/docs/workflows)
