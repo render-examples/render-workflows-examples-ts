@@ -1,19 +1,15 @@
 {
   "name": "hello-world-workflow",
   "version": "1.0.0",
-  "description": "Hello World - Getting Started with Render Workflows (TypeScript)",
+  "description": "Hello World - Render Workflows (TypeScript)",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/main.js",
-    "dev": "tsx src/main.ts"
+    "start": "tsx src/main.ts"
   },
   "dependencies": {
-    "@renderinc/sdk": "latest",
-    "dotenv": "^16.4.7"
+    "@renderinc/sdk": "^0.5.0"
   },
   "devDependencies": {
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "tsx": "^4.20.2"
   }
 }
