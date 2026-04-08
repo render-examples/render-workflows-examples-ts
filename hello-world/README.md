@@ -52,19 +52,22 @@ Retry policy in this example:
 
 ### Run locally
 
-```bash
-cd hello-world
-npm install
-npm start
-```
+> Make sure you've installed the latest version of the [Render CLI](https://render.com/docs/cli).
 
-To run tasks locally from another terminal:
+1. From this template's root, start the local task server:
 
-```bash
-render workflows tasks start calculateSquare --local --input='[5]'
-render workflows tasks start sumSquares --local --input='[3,4]'
-render workflows tasks start flipCoin --local --input='[]'
-```
+    ```bash
+    npm install
+    render workflows dev -- npm start
+    ```
+
+2. In a separate terminal, trigger task runs:
+
+    ```bash
+    render workflows tasks start calculateSquare --local --input='[5]'
+    render workflows tasks start sumSquares --local --input='[3,4]'
+    render workflows tasks start flipCoin --local --input='[]'
+    ```
 
 Expected behavior:
 
