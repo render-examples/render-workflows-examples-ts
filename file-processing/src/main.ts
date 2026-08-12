@@ -1,7 +1,52 @@
 import "dotenv/config";
-import { task } from "@renderinc/sdk/workflows";
+import { task, type TaskContext } from "@renderinc/sdk/workflows";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, extname } from "node:path";
+
+interface ReadFailure {
+  success: false;
+  file_path: string;
+  error: string;
+}
+
+interface CsvReadSuccess {
+  success: true;
+  file_path: string;
+  file_type: "csv";
+  row_count: number;
+  data: { [key: string]: string }[];
+  columns: string[];
+}
+
+interface JsonReadSuccess {
+  success: true;
+  file_path: string;
+  file_type: "json";
+  data: unknown;
+  keys: string[] | null;
+}
+
+interface TextReadSuccess {
+  success: true;
+  file_path: string;
+  file_type: "text";
+  content: string;
+  line_count: number;
+  word_count: number;
+  char_count: number;
+}
+
+type ReadResult = CsvReadSuccess | JsonReadSuccess | TextReadSuccess | ReadFailure;
+
+type ProcessedFile =
+  | { success: false; file_path: string; error: string }
+  | {
+      success: true;
+      file_path: string;
+      file_type: string;
+      read_result: ReadResult;
+      analysis: { [key: string]: unknown };
+    };
 
 const retry = {
   maxRetries: 3,
@@ -13,7 +58,7 @@ const retry = {
 
 const readCsvFile = task(
   { name: "readCsvFile", retry },
-  function readCsvFile(filePath: string) {
+  function readCsvFile(_ctx: TaskContext, filePath: string): CsvReadSuccess | ReadFailure {
     console.log(`[CSV] Reading file: ${filePath}`);
 
     const fullPath = resolve(filePath);
@@ -48,7 +93,7 @@ const readCsvFile = task(
 
 const readJsonFile = task(
   { name: "readJsonFile", retry },
-  function readJsonFile(filePath: string) {
+  function readJsonFile(_ctx: TaskContext, filePath: string): JsonReadSuccess | ReadFailure {
     console.log(`[JSON] Reading file: ${filePath}`);
 
     const fullPath = resolve(filePath);
@@ -66,7 +111,7 @@ const readJsonFile = task(
         file_path: filePath,
         file_type: "json",
         data,
-        keys: typeof data === "object" && !Array.isArray(data) ? Object.keys(data) : null,
+        keys: typeof data === "object" && data !== null && !Array.isArray(data) ? Object.keys(data) : null,
       };
     } catch (e) {
       console.error(`[JSON] Error reading file: ${e}`);
@@ -77,7 +122,7 @@ const readJsonFile = task(
 
 const readTextFile = task(
   { name: "readTextFile", retry },
-  function readTextFile(filePath: string) {
+  function readTextFile(_ctx: TaskContext, filePath: string): TextReadSuccess | ReadFailure {
     console.log(`[TEXT] Reading file: ${filePath}`);
 
     const fullPath = resolve(filePath);
@@ -112,12 +157,12 @@ const readTextFile = task(
 
 const analyzeCsvData = task(
   { name: "analyzeCsvData", retry },
-  function analyzeCsvData(csvResult: { success?: boolean; data?: { [key: string]: string }[] }) {
+  function analyzeCsvData(_ctx: TaskContext, csvResult: CsvReadSuccess | ReadFailure) {
     console.log("[ANALYSIS] Analyzing CSV data");
 
     if (!csvResult.success) return { success: false, error: "No data to analyze" };
 
-    const rows = csvResult.data ?? [];
+    const rows = csvResult.data;
     if (rows.length === 0) return { success: false, error: "Empty dataset" };
 
     let totalQuantity = 0;
@@ -152,7 +197,7 @@ const analyzeCsvData = task(
 
 const analyzeJsonStructure = task(
   { name: "analyzeJsonStructure", retry },
-  function analyzeJsonStructure(jsonResult: { success?: boolean; data?: unknown }) {
+  function analyzeJsonStructure(_ctx: TaskContext, jsonResult: JsonReadSuccess | ReadFailure) {
     console.log("[ANALYSIS] Analyzing JSON structure");
 
     if (!jsonResult.success) return { success: false, error: "No data to analyze" };
@@ -184,15 +229,12 @@ const analyzeJsonStructure = task(
 
 const analyzeTextContent = task(
   { name: "analyzeTextContent", retry },
-  function analyzeTextContent(textResult: {
-    success?: boolean;
-    content?: string;
-  }) {
+  function analyzeTextContent(_ctx: TaskContext, textResult: TextReadSuccess | ReadFailure) {
     console.log("[ANALYSIS] Analyzing text content");
 
     if (!textResult.success) return { success: false, error: "No data to analyze" };
 
-    const content = textResult.content ?? "";
+    const content = textResult.content;
     const lines = content.split("\n");
     const words = content.split(/\s+/).filter(Boolean);
 
@@ -224,30 +266,34 @@ const analyzeTextContent = task(
 
 const processSingleFile = task(
   { name: "processSingleFile", retry },
-  async function processSingleFile(filePath: string) {
+  async function processSingleFile(ctx: TaskContext, filePath: string): Promise<ProcessedFile> {
     console.log(`[PROCESS] Processing file: ${filePath}`);
 
     const extension = extname(filePath).toLowerCase();
-    let readResult: { success?: boolean; [key: string]: unknown };
+    let readResult: ReadResult;
     let analysis: { [key: string]: unknown } = {};
 
     if (extension === ".csv") {
-      readResult = await readCsvFile(filePath);
-      if (readResult.success) analysis = await analyzeCsvData(readResult as Parameters<typeof analyzeCsvData>[0]);
+      readResult = await ctx.step(readCsvFile, filePath);
+      if (readResult.success) analysis = await ctx.step(analyzeCsvData, readResult);
     } else if (extension === ".json") {
-      readResult = await readJsonFile(filePath);
-      if (readResult.success) analysis = await analyzeJsonStructure(readResult as Parameters<typeof analyzeJsonStructure>[0]);
+      readResult = await ctx.step(readJsonFile, filePath);
+      if (readResult.success) analysis = await ctx.step(analyzeJsonStructure, readResult);
     } else if (extension === ".txt") {
-      readResult = await readTextFile(filePath);
-      if (readResult.success) analysis = await analyzeTextContent(readResult as Parameters<typeof analyzeTextContent>[0]);
+      readResult = await ctx.step(readTextFile, filePath);
+      if (readResult.success) analysis = await ctx.step(analyzeTextContent, readResult);
     } else {
       console.warn(`[PROCESS] Unsupported file type: ${extension}`);
       return { success: false, file_path: filePath, error: `Unsupported file type: ${extension}` };
     }
 
+    if (!readResult.success) {
+      return { success: false, file_path: filePath, error: readResult.error };
+    }
+
     console.log(`[PROCESS] File processed: ${filePath}`);
     return {
-      success: readResult.success ?? false,
+      success: true,
       file_path: filePath,
       file_type: extension.slice(1),
       read_result: readResult,
@@ -259,20 +305,20 @@ const processSingleFile = task(
 // Root task: processes multiple files in parallel
 task(
   { name: "processFileBatch", retry, timeoutSeconds: 300 },
-  async function processFileBatch(...filePaths: string[]) {
+  async function processFileBatch(ctx: TaskContext, ...filePaths: string[]) {
     console.log("=".repeat(80));
     console.log(`[BATCH] Starting batch processing of ${filePaths.length} files`);
     console.log("=".repeat(80));
 
-    const results = await Promise.all(filePaths.map((fp) => processSingleFile(fp)));
+    const results = await Promise.all(filePaths.map((fp) => ctx.step(processSingleFile, fp)));
 
     const successful = results.filter((r) => r.success);
     const failed = results.filter((r) => !r.success);
 
     const fileTypes: { [key: string]: number } = {};
-    for (const result of successful) {
-      const ft = (result.file_type as string) ?? "unknown";
-      fileTypes[ft] = (fileTypes[ft] ?? 0) + 1;
+    for (const result of results) {
+      if (!result.success) continue;
+      fileTypes[result.file_type] = (fileTypes[result.file_type] ?? 0) + 1;
     }
 
     const batchResult = {
@@ -297,14 +343,17 @@ task(
 // Root task: generate a consolidated report from batch results
 task(
   { name: "generateConsolidatedReport", retry },
-  async function generateConsolidatedReport(batchResult: {
-    total_files?: number;
-    successful?: number;
-    failed?: number;
-    success_rate?: number;
-    file_types?: { [key: string]: number };
-    results?: { success?: boolean; file_type?: string; analysis?: { total_records?: number; total_words?: number; total_keys?: number } }[];
-  }) {
+  async function generateConsolidatedReport(
+    _ctx: TaskContext,
+    batchResult: {
+      total_files?: number;
+      successful?: number;
+      failed?: number;
+      success_rate?: number;
+      file_types?: { [key: string]: number };
+      results?: { success?: boolean; file_type?: string; analysis?: { total_records?: number; total_words?: number; total_keys?: number } }[];
+    },
+  ) {
     console.log("[REPORT] Generating consolidated report");
 
     const results = batchResult.results ?? [];

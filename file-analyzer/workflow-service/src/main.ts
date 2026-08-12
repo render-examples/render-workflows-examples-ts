@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { task } from "@renderinc/sdk/workflows";
+import { task, type TaskContext } from "@renderinc/sdk/workflows";
 
 interface ParsedData {
   success: boolean;
@@ -19,7 +19,7 @@ const retry = {
 // Subtask: parse CSV content into structured data
 const parseCsvData = task(
   { name: "parseCsvData", retry },
-  function parseCsvData(fileContent: string): ParsedData {
+  function parseCsvData(_ctx: TaskContext, fileContent: string): ParsedData {
     console.log("[PARSE] Starting CSV parsing");
 
     try {
@@ -56,7 +56,7 @@ const parseCsvData = task(
 // Subtask: calculate statistics from parsed data
 const calculateStatistics = task(
   { name: "calculateStatistics", retry },
-  function calculateStatistics(data: ParsedData) {
+  function calculateStatistics(_ctx: TaskContext, data: ParsedData) {
     console.log("[STATS] Calculating statistics");
 
     if (!data.success || data.rows.length === 0) {
@@ -111,7 +111,7 @@ const calculateStatistics = task(
 // Subtask: identify trends and patterns
 const identifyTrends = task(
   { name: "identifyTrends", retry },
-  function identifyTrends(data: ParsedData) {
+  function identifyTrends(_ctx: TaskContext, data: ParsedData) {
     console.log("[TRENDS] Identifying trends");
 
     if (!data.success || data.rows.length === 0) {
@@ -164,6 +164,7 @@ const identifyTrends = task(
 const generateInsights = task(
   { name: "generateInsights", retry },
   async function generateInsights(
+    _ctx: TaskContext,
     stats: { success?: boolean; numeric_columns?: string[]; statistics?: { [col: string]: { avg: number; min: number; max: number; sum: number } } },
     trends: { success?: boolean; categorical_columns?: string[]; categorical_analysis?: { [col: string]: { top_5: [string, number][]; distribution: { [key: string]: number } } } },
     metadata: ParsedData,
@@ -214,11 +215,11 @@ const generateInsights = task(
 // Root task: orchestrates the full analysis pipeline
 task(
   { name: "analyzeFile", retry, timeoutSeconds: 300 },
-  async function analyzeFile(fileContent: string) {
+  async function analyzeFile(ctx: TaskContext, fileContent: string) {
     console.log("[ANALYZE_FILE] Starting file analysis pipeline");
 
     console.log("[ANALYZE_FILE] Stage 1: Parsing CSV data");
-    const parsedData = await parseCsvData(fileContent);
+    const parsedData = await ctx.step(parseCsvData, fileContent);
 
     if (!parsedData.success) {
       console.error("[ANALYZE_FILE] Failed to parse CSV data");
@@ -227,14 +228,14 @@ task(
 
     console.log(`[ANALYZE_FILE] Parsed ${parsedData.row_count} rows`);
 
-    console.log("[ANALYZE_FILE] Stage 2: Calculating statistics");
-    const stats = await calculateStatistics(parsedData);
+    console.log("[ANALYZE_FILE] Stage 2: Calculating statistics and identifying trends");
+    const [stats, trends] = await Promise.all([
+      ctx.step(calculateStatistics, parsedData),
+      ctx.step(identifyTrends, parsedData),
+    ]);
 
-    console.log("[ANALYZE_FILE] Stage 3: Identifying trends");
-    const trends = await identifyTrends(parsedData);
-
-    console.log("[ANALYZE_FILE] Stage 4: Generating insights");
-    const insights = await generateInsights(stats, trends, parsedData);
+    console.log("[ANALYZE_FILE] Stage 3: Generating insights");
+    const insights = await ctx.step(generateInsights, stats, trends, parsedData);
 
     console.log("[ANALYZE_FILE] Analysis pipeline completed successfully");
 
