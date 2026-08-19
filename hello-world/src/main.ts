@@ -11,8 +11,8 @@ const sumSquares = task(
   { name: "sumSquares" },
   async function sumSquares(ctx: TaskContext, a: number, b: number): Promise<number> {
     const [result1, result2] = await Promise.all([
-      ctx.step(calculateSquare, a),
-      ctx.step(calculateSquare, b),
+      ctx.run(calculateSquare, a),
+      ctx.run(calculateSquare, b),
     ]);
     return result1 + result2;
   },

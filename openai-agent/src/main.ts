@@ -198,11 +198,11 @@ const executeTool = task(
     try {
       switch (toolName) {
         case "get_order_status":
-          return await ctx.step(getOrderStatus, args.order_id);
+          return await ctx.run(getOrderStatus, args.order_id);
         case "process_refund":
-          return await ctx.step(processRefund, args.order_id, args.reason);
+          return await ctx.run(processRefund, args.order_id, args.reason);
         case "search_knowledge_base":
-          return await ctx.step(searchKnowledgeBase, args.query);
+          return await ctx.run(searchKnowledgeBase, args.query);
         default:
           console.error(`[AGENT] Unknown tool: ${toolName}`);
           return { error: `Unknown tool: ${toolName}` };
@@ -246,7 +246,7 @@ const agentTurn = task(
       { role: "user", content: userMessage },
     ];
 
-    const llmResponse = await ctx.step(callLlmWithTools, messages, tools);
+    const llmResponse = await ctx.run(callLlmWithTools, messages, tools);
 
     if (!llmResponse.tool_calls.length) {
       console.log("[AGENT TURN] No tool calls, returning response");
@@ -265,7 +265,7 @@ const agentTurn = task(
     const toolResults: { tool: string; result: unknown }[] = [];
 
     for (const toolCall of llmResponse.tool_calls) {
-      const result = await ctx.step(
+      const result = await ctx.run(
         executeTool,
         toolCall.function.name,
         JSON.parse(toolCall.function.arguments),
@@ -293,7 +293,7 @@ const agentTurn = task(
       ...toolMessages,
     ];
 
-    const finalResponse = await ctx.step(callLlmWithTools, finalMessages, tools);
+    const finalResponse = await ctx.run(callLlmWithTools, finalMessages, tools);
 
     console.log("[AGENT TURN] Agent turn complete");
 
@@ -323,7 +323,7 @@ task(
     for (let i = 0; i < messages.length; i++) {
       console.log(`[CONVERSATION] Turn ${i + 1}/${messages.length}`);
 
-      const turnResult = await ctx.step(agentTurn, messages[i], conversationHistory);
+      const turnResult = await ctx.run(agentTurn, messages[i], conversationHistory);
 
       responses.push({
         turn: i + 1,

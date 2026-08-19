@@ -274,14 +274,14 @@ const processSingleFile = task(
     let analysis: { [key: string]: unknown } = {};
 
     if (extension === ".csv") {
-      readResult = await ctx.step(readCsvFile, filePath);
-      if (readResult.success) analysis = await ctx.step(analyzeCsvData, readResult);
+      readResult = await ctx.run(readCsvFile, filePath);
+      if (readResult.success) analysis = await ctx.run(analyzeCsvData, readResult);
     } else if (extension === ".json") {
-      readResult = await ctx.step(readJsonFile, filePath);
-      if (readResult.success) analysis = await ctx.step(analyzeJsonStructure, readResult);
+      readResult = await ctx.run(readJsonFile, filePath);
+      if (readResult.success) analysis = await ctx.run(analyzeJsonStructure, readResult);
     } else if (extension === ".txt") {
-      readResult = await ctx.step(readTextFile, filePath);
-      if (readResult.success) analysis = await ctx.step(analyzeTextContent, readResult);
+      readResult = await ctx.run(readTextFile, filePath);
+      if (readResult.success) analysis = await ctx.run(analyzeTextContent, readResult);
     } else {
       console.warn(`[PROCESS] Unsupported file type: ${extension}`);
       return { success: false, file_path: filePath, error: `Unsupported file type: ${extension}` };
@@ -310,7 +310,7 @@ task(
     console.log(`[BATCH] Starting batch processing of ${filePaths.length} files`);
     console.log("=".repeat(80));
 
-    const results = await Promise.all(filePaths.map((fp) => ctx.step(processSingleFile, fp)));
+    const results = await Promise.all(filePaths.map((fp) => ctx.run(processSingleFile, fp)));
 
     const successful = results.filter((r) => r.success);
     const failed = results.filter((r) => !r.success);

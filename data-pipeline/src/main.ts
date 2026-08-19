@@ -219,8 +219,8 @@ const transformUserData = task(
       users.map(async (user) => {
         const userEngagement = engagementMap.get(user.id) ?? ({} as Engagement);
         const [userMetrics, geoData] = await Promise.all([
-          ctx.step(calculateUserMetrics, user, transactions, userEngagement),
-          ctx.step(enrichWithGeoData, user.email),
+          ctx.run(calculateUserMetrics, user, transactions, userEngagement),
+          ctx.run(enrichWithGeoData, user.email),
         ]);
         return { ...userMetrics, geo: geoData };
       }),
@@ -295,9 +295,9 @@ task(
     // Stage 1: Parallel extraction
     console.log("[PIPELINE] Stage 1/3: EXTRACT (parallel)");
     const [userData, transactionData, engagementData] = await Promise.all([
-      ctx.step(fetchUserData, userIds),
-      ctx.step(fetchTransactionData, userIds),
-      ctx.step(fetchEngagementData, userIds),
+      ctx.run(fetchUserData, userIds),
+      ctx.run(fetchTransactionData, userIds),
+      ctx.run(fetchEngagementData, userIds),
     ]);
 
     console.log(
@@ -306,7 +306,7 @@ task(
 
     // Stage 2: Transform
     console.log("[PIPELINE] Stage 2/3: TRANSFORM");
-    const enrichedData = await ctx.step(
+    const enrichedData = await ctx.run(
       transformUserData,
       userData,
       transactionData,
@@ -316,7 +316,7 @@ task(
 
     // Stage 3: Aggregate
     console.log("[PIPELINE] Stage 3/3: AGGREGATE");
-    const insights = await ctx.step(aggregateInsights, enrichedData);
+    const insights = await ctx.run(aggregateInsights, enrichedData);
 
     const pipelineResult = {
       status: "success",

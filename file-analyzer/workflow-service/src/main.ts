@@ -219,7 +219,7 @@ task(
     console.log("[ANALYZE_FILE] Starting file analysis pipeline");
 
     console.log("[ANALYZE_FILE] Stage 1: Parsing CSV data");
-    const parsedData = await ctx.step(parseCsvData, fileContent);
+    const parsedData = await ctx.run(parseCsvData, fileContent);
 
     if (!parsedData.success) {
       console.error("[ANALYZE_FILE] Failed to parse CSV data");
@@ -230,12 +230,12 @@ task(
 
     console.log("[ANALYZE_FILE] Stage 2: Calculating statistics and identifying trends");
     const [stats, trends] = await Promise.all([
-      ctx.step(calculateStatistics, parsedData),
-      ctx.step(identifyTrends, parsedData),
+      ctx.run(calculateStatistics, parsedData),
+      ctx.run(identifyTrends, parsedData),
     ]);
 
     console.log("[ANALYZE_FILE] Stage 3: Generating insights");
-    const insights = await ctx.step(generateInsights, stats, trends, parsedData);
+    const insights = await ctx.run(generateInsights, stats, trends, parsedData);
 
     console.log("[ANALYZE_FILE] Analysis pipeline completed successfully");
 

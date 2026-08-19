@@ -9,7 +9,7 @@ This hello-world example demonstrates three foundational workflow patterns:
 ## What You'll Learn
 
 - How to define tasks with `task(...)`
-- How to chain task runs using `ctx.step` and `Promise.all`
+- How to chain task runs using `ctx.run` and `Promise.all`
 - How to customize retry behavior with `retry`
 
 ## Example Tasks
@@ -31,8 +31,8 @@ It uses `Promise.all(...)` to chain the two runs in parallel:
 
 ```ts
 const [result1, result2] = await Promise.all([
-  ctx.step(calculateSquare, a),
-  ctx.step(calculateSquare, b),
+  ctx.run(calculateSquare, a),
+  ctx.run(calculateSquare, b),
 ]);
 ```
 
@@ -95,11 +95,11 @@ Configure your Workflow service with:
 
 Any call to `task({ name: ... }, handler)` registers a runnable workflow task.
 `task(...)` returns a task definition, which is not callable on its own — pass
-it to `ctx.step` to run it.
+it to `ctx.run` to run it.
 
 ### Chaining runs
 
-Inside an async task, `await ctx.step(anotherTask, ...inputs)` runs that task on
+Inside an async task, `await ctx.run(anotherTask, ...inputs)` runs that task on
 its own compute and resolves with its result.
 
 ### Retries

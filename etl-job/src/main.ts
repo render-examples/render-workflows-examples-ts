@@ -120,7 +120,7 @@ const transformBatch = task(
 
     for (let i = 0; i < records.length; i++) {
       console.log(`[TRANSFORM] Processing record ${i + 1}/${records.length}`);
-      const validated = await ctx.step(validateRecord, records[i]);
+      const validated = await ctx.run(validateRecord, records[i]);
 
       if (validated.is_valid) {
         validRecords.push(validated);
@@ -198,17 +198,17 @@ task(
     console.log("=".repeat(80));
 
     console.log("[PIPELINE] Stage 1/3: EXTRACT");
-    const rawRecords = await ctx.step(extractCsvData, sourceFile);
+    const rawRecords = await ctx.run(extractCsvData, sourceFile);
     console.log(`[PIPELINE] Extracted ${rawRecords.length} records`);
 
     console.log("[PIPELINE] Stage 2/3: TRANSFORM");
-    const transformResult = await ctx.step(transformBatch, rawRecords);
+    const transformResult = await ctx.run(transformBatch, rawRecords);
     console.log(
       `[PIPELINE] Transformation complete: ${(transformResult.success_rate * 100).toFixed(1)}% success rate`,
     );
 
     console.log("[PIPELINE] Stage 3/3: LOAD");
-    const statistics = await ctx.step(computeStatistics, transformResult.valid_records);
+    const statistics = await ctx.run(computeStatistics, transformResult.valid_records);
     console.log("[PIPELINE] Statistics computed");
 
     const pipelineResult = {
