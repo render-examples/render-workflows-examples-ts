@@ -9,16 +9,21 @@ This hello-world example demonstrates three foundational workflow patterns:
 ## What You'll Learn
 
 - How to define tasks with `task(...)`
-- How to chain task runs using `await` and `Promise.all`
+- How to chain task runs using `ctx.run` and `Promise.all`
 - How to customize retry behavior with `retry`
 
 ## Example Tasks
 
-### `calculateSquare(a: number): number`
+Every task takes a `TaskContext` as its first parameter, followed by its inputs.
+The workflow system supplies the context, so the inputs you pass with
+`--input` start after it.
 
-The smallest possible task: takes one number and returns its square.
+### `calculateSquare(ctx, a: number): number`
 
-### `sumSquares(a: number, b: number): Promise<number>`
+The smallest possible task: takes one number and returns its square. It runs no
+other tasks, so it never touches the context.
+
+### `sumSquares(ctx, a: number, b: number): Promise<number>`
 
 Chains two runs of `calculateSquare` and sums the results.
 
@@ -26,12 +31,12 @@ It uses `Promise.all(...)` to chain the two runs in parallel:
 
 ```ts
 const [result1, result2] = await Promise.all([
-  calculateSquare(a),
-  calculateSquare(b),
+  ctx.run(calculateSquare, a),
+  ctx.run(calculateSquare, b),
 ]);
 ```
 
-### `flipCoin(): string`
+### `flipCoin(ctx): string`
 
 Simulates a coin flip:
 
@@ -89,10 +94,13 @@ Configure your Workflow service with:
 ### Task registration
 
 Any call to `task({ name: ... }, handler)` registers a runnable workflow task.
+`task(...)` returns a task definition, which is not callable on its own — pass
+it to `ctx.run` to run it.
 
 ### Chaining runs
 
-Inside an async task, calling `await anotherTask(...)` chains a run of that task.
+Inside an async task, `await ctx.run(anotherTask, ...inputs)` runs that task on
+its own compute and resolves with its result.
 
 ### Retries
 

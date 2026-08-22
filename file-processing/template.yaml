@@ -1,0 +1,29 @@
+# This file is used by `render workflows init` to scaffold new projects.
+# It tells the CLI how to display this template and what instructions to show
+# after scaffolding. You can safely ignore it when using this example directly.
+
+name: File Processing
+description: Parallel file ingestion with per-type parsing, analysis, and reporting
+
+workflowsRoot: .
+
+renderBuildCommand: npm install && npm run build
+renderStartCommand: node dist/main.js
+
+nextSteps:
+  - label: Enter your project directory
+    command: cd {{dir}}
+  - label: Start your local task server
+    command: render workflows dev -- {{startCommand}}
+    hint: This runs your workflow service locally, allowing you to view and run tasks without deploying to Render.
+  - label: Create a sample file to process
+    command: "printf 'product,quantity,price,region\\nWidget,10,2.50,US\\nGadget,5,7.00,EU\\n' > sample.csv"
+    hint: The pipeline handles .csv, .json, and .txt files, choosing a reader and analyzer based on the extension.
+  - label: Process a batch of files locally (in another terminal)
+    command: "render workflows tasks start processFileBatch --local --input='[\"sample.csv\"]'"
+    hint: Each file is read and analyzed in parallel. Pass more paths in the input array to process several files at once.
+  - label: Deploy your workflow service to Render
+    hint: |
+      To deploy this workflow to Render, first push this code to a remote repository. Then, create a workflow service from your Render Dashboard, connect it to your repository, and provide the following build and start commands:
+      • Build command: {{renderBuildCommand}}
+      • Start command: {{renderStartCommand}}

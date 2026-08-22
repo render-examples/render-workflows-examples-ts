@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { task } from "@renderinc/sdk/workflows";
+import { task, type TaskContext } from "@renderinc/sdk/workflows";
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
 
@@ -24,7 +24,7 @@ function createOpenAIClient(): OpenAI {
 
 const getOrderStatus = task(
   { name: "getOrderStatus", retry },
-  function getOrderStatus(orderId: string) {
+  function getOrderStatus(_ctx: TaskContext, orderId: string) {
     console.log(`[TOOL] Looking up order status for: ${orderId}`);
 
     const mockOrders: { [key: string]: { status: string; tracking: string | null; eta: string } } = {
@@ -47,7 +47,7 @@ const getOrderStatus = task(
 // No retry: processing a refund is non-idempotent
 const processRefund = task(
   { name: "processRefund" },
-  function processRefund(orderId: string, reason: string) {
+  function processRefund(_ctx: TaskContext, orderId: string, reason: string) {
     console.log(`[TOOL] Processing refund for order: ${orderId}`);
     console.log(`[TOOL] Refund reason: ${reason}`);
 
@@ -69,7 +69,7 @@ const processRefund = task(
 
 const searchKnowledgeBase = task(
   { name: "searchKnowledgeBase", retry },
-  function searchKnowledgeBase(query: string) {
+  function searchKnowledgeBase(_ctx: TaskContext, query: string) {
     console.log(`[TOOL] Searching knowledge base: ${query}`);
 
     const knowledge: { [key: string]: { title: string; content: string } } = {
@@ -155,6 +155,7 @@ const tools: ChatCompletionTool[] = [
 const callLlmWithTools = task(
   { name: "callLlmWithTools", retry },
   async function callLlmWithTools(
+    _ctx: TaskContext,
     messages: ChatCompletionMessageParam[],
     toolDefs: ChatCompletionTool[],
     model: string = "gpt-4",
@@ -191,17 +192,17 @@ const callLlmWithTools = task(
 
 const executeTool = task(
   { name: "executeTool", retry },
-  async function executeTool(toolName: string, args: { [key: string]: string }) {
+  async function executeTool(ctx: TaskContext, toolName: string, args: { [key: string]: string }) {
     console.log(`[AGENT] Executing tool: ${toolName}`);
 
     try {
       switch (toolName) {
         case "get_order_status":
-          return await getOrderStatus(args.order_id);
+          return await ctx.run(getOrderStatus, args.order_id);
         case "process_refund":
-          return await processRefund(args.order_id, args.reason);
+          return await ctx.run(processRefund, args.order_id, args.reason);
         case "search_knowledge_base":
-          return await searchKnowledgeBase(args.query);
+          return await ctx.run(searchKnowledgeBase, args.query);
         default:
           console.error(`[AGENT] Unknown tool: ${toolName}`);
           return { error: `Unknown tool: ${toolName}` };
@@ -216,6 +217,7 @@ const executeTool = task(
 const agentTurn = task(
   { name: "agentTurn", retry },
   async function agentTurn(
+    ctx: TaskContext,
     userMessage: string,
     conversationHistory: ChatCompletionMessageParam[] = [],
   ) {
@@ -244,7 +246,7 @@ const agentTurn = task(
       { role: "user", content: userMessage },
     ];
 
-    const llmResponse = await callLlmWithTools(messages, tools);
+    const llmResponse = await ctx.run(callLlmWithTools, messages, tools);
 
     if (!llmResponse.tool_calls.length) {
       console.log("[AGENT TURN] No tool calls, returning response");
@@ -263,7 +265,8 @@ const agentTurn = task(
     const toolResults: { tool: string; result: unknown }[] = [];
 
     for (const toolCall of llmResponse.tool_calls) {
-      const result = await executeTool(
+      const result = await ctx.run(
+        executeTool,
         toolCall.function.name,
         JSON.parse(toolCall.function.arguments),
       );
@@ -290,7 +293,7 @@ const agentTurn = task(
       ...toolMessages,
     ];
 
-    const finalResponse = await callLlmWithTools(finalMessages, tools);
+    const finalResponse = await ctx.run(callLlmWithTools, finalMessages, tools);
 
     console.log("[AGENT TURN] Agent turn complete");
 
@@ -309,7 +312,7 @@ const agentTurn = task(
 // Root task: multi-turn conversation
 task(
   { name: "multiTurnConversation", retry, timeoutSeconds: 300 },
-  async function multiTurnConversation(...messages: string[]) {
+  async function multiTurnConversation(ctx: TaskContext, ...messages: string[]) {
     console.log("=".repeat(80));
     console.log(`[CONVERSATION] Starting multi-turn conversation with ${messages.length} messages`);
     console.log("=".repeat(80));
@@ -320,7 +323,7 @@ task(
     for (let i = 0; i < messages.length; i++) {
       console.log(`[CONVERSATION] Turn ${i + 1}/${messages.length}`);
 
-      const turnResult = await agentTurn(messages[i], conversationHistory);
+      const turnResult = await ctx.run(agentTurn, messages[i], conversationHistory);
 
       responses.push({
         turn: i + 1,

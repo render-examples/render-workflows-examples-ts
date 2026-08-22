@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { task } from "@renderinc/sdk/workflows";
+import { task, type TaskContext } from "@renderinc/sdk/workflows";
 
 interface User {
   id: string;
@@ -58,7 +58,7 @@ function simpleHash(str: string): number {
 
 const fetchUserData = task(
   { name: "fetchUserData", retry },
-  async function fetchUserData(userIds: string[]) {
+  async function fetchUserData(_ctx: TaskContext, userIds: string[]) {
     console.log(`[SOURCE] Fetching user data for ${userIds.length} users`);
 
     const mockUsers: { [key: string]: User } = {
@@ -79,7 +79,7 @@ const fetchUserData = task(
 
 const fetchTransactionData = task(
   { name: "fetchTransactionData", retry },
-  async function fetchTransactionData(userIds: string[], days: number = 30) {
+  async function fetchTransactionData(_ctx: TaskContext, userIds: string[], days: number = 30) {
     console.log(`[SOURCE] Fetching transactions for ${userIds.length} users (${days} days)`);
 
     const transactions: Transaction[] = [];
@@ -108,7 +108,7 @@ const fetchTransactionData = task(
 
 const fetchEngagementData = task(
   { name: "fetchEngagementData", retry },
-  async function fetchEngagementData(userIds: string[]) {
+  async function fetchEngagementData(_ctx: TaskContext, userIds: string[]) {
     console.log(`[SOURCE] Fetching engagement data for ${userIds.length} users`);
 
     const engagement: Engagement[] = userIds.map((userId) => {
@@ -135,7 +135,7 @@ const fetchEngagementData = task(
 
 const enrichWithGeoData = task(
   { name: "enrichWithGeoData", retry },
-  async function enrichWithGeoData(userEmail: string) {
+  async function enrichWithGeoData(_ctx: TaskContext, userEmail: string) {
     console.log(`[ENRICH] Enriching geo data for ${userEmail}`);
     const idx = simpleHash(userEmail) % 4;
     return {
@@ -149,6 +149,7 @@ const enrichWithGeoData = task(
 const calculateUserMetrics = task(
   { name: "calculateUserMetrics", retry },
   async function calculateUserMetrics(
+    _ctx: TaskContext,
     user: User,
     transactions: Transaction[],
     engagement: Engagement,
@@ -197,6 +198,7 @@ const calculateUserMetrics = task(
 const transformUserData = task(
   { name: "transformUserData", retry },
   async function transformUserData(
+    ctx: TaskContext,
     userData: { data: User[] },
     transactionData: { data: Transaction[] },
     engagementData: { data: Engagement[] },
@@ -217,8 +219,8 @@ const transformUserData = task(
       users.map(async (user) => {
         const userEngagement = engagementMap.get(user.id) ?? ({} as Engagement);
         const [userMetrics, geoData] = await Promise.all([
-          calculateUserMetrics(user, transactions, userEngagement),
-          enrichWithGeoData(user.email),
+          ctx.run(calculateUserMetrics, user, transactions, userEngagement),
+          ctx.run(enrichWithGeoData, user.email),
         ]);
         return { ...userMetrics, geo: geoData };
       }),
@@ -233,7 +235,7 @@ const transformUserData = task(
 
 const aggregateInsights = task(
   { name: "aggregateInsights", retry },
-  function aggregateInsights(enrichedData: { data: EnrichedUser[] }) {
+  function aggregateInsights(_ctx: TaskContext, enrichedData: { data: EnrichedUser[] }) {
     console.log("[AGGREGATE] Generating insights from enriched data");
 
     const users = enrichedData.data ?? [];
@@ -284,7 +286,7 @@ const aggregateInsights = task(
 // Root task: full pipeline orchestrator
 task(
   { name: "runDataPipeline", retry, timeoutSeconds: 300 },
-  async function runDataPipeline(userIds: string[]) {
+  async function runDataPipeline(ctx: TaskContext, userIds: string[]) {
     console.log("=".repeat(80));
     console.log("[PIPELINE] Starting Data Pipeline");
     console.log(`[PIPELINE] Processing ${userIds.length} users`);
@@ -293,9 +295,9 @@ task(
     // Stage 1: Parallel extraction
     console.log("[PIPELINE] Stage 1/3: EXTRACT (parallel)");
     const [userData, transactionData, engagementData] = await Promise.all([
-      fetchUserData(userIds),
-      fetchTransactionData(userIds),
-      fetchEngagementData(userIds),
+      ctx.run(fetchUserData, userIds),
+      ctx.run(fetchTransactionData, userIds),
+      ctx.run(fetchEngagementData, userIds),
     ]);
 
     console.log(
@@ -304,12 +306,17 @@ task(
 
     // Stage 2: Transform
     console.log("[PIPELINE] Stage 2/3: TRANSFORM");
-    const enrichedData = await transformUserData(userData, transactionData, engagementData);
+    const enrichedData = await ctx.run(
+      transformUserData,
+      userData,
+      transactionData,
+      engagementData,
+    );
     console.log(`[PIPELINE] Enriched ${enrichedData.count} user profiles`);
 
     // Stage 3: Aggregate
     console.log("[PIPELINE] Stage 3/3: AGGREGATE");
-    const insights = await aggregateInsights(enrichedData as { data: EnrichedUser[] });
+    const insights = await ctx.run(aggregateInsights, enrichedData);
 
     const pipelineResult = {
       status: "success",

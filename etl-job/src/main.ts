@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { task } from "@renderinc/sdk/workflows";
+import { task, type TaskContext } from "@renderinc/sdk/workflows";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -32,7 +32,7 @@ const retry = {
 // Subtask: extract rows from a CSV file
 const extractCsvData = task(
   { name: "extractCsvData", retry },
-  function extractCsvData(filePath: string): Record[] {
+  function extractCsvData(_ctx: TaskContext, filePath: string): Record[] {
     console.log(`[EXTRACT] Reading CSV file: ${filePath}`);
 
     const fullPath = resolve(filePath);
@@ -69,7 +69,7 @@ const extractCsvData = task(
 // Subtask: validate and clean a single record
 const validateRecord = task(
   { name: "validateRecord", retry },
-  function validateRecord(record: Record): ValidatedRecord {
+  function validateRecord(_ctx: TaskContext, record: Record): ValidatedRecord {
     console.log(`[TRANSFORM] Validating record ID: ${record.id ?? "unknown"}`);
 
     const errors: string[] = [];
@@ -112,7 +112,7 @@ const validateRecord = task(
 // Subtask: validate a batch of records by calling validateRecord for each
 const transformBatch = task(
   { name: "transformBatch", retry },
-  async function transformBatch(records: Record[]) {
+  async function transformBatch(ctx: TaskContext, records: Record[]) {
     console.log(`[TRANSFORM] Starting batch transformation of ${records.length} records`);
 
     const validRecords: ValidatedRecord[] = [];
@@ -120,7 +120,7 @@ const transformBatch = task(
 
     for (let i = 0; i < records.length; i++) {
       console.log(`[TRANSFORM] Processing record ${i + 1}/${records.length}`);
-      const validated = await validateRecord(records[i]);
+      const validated = await ctx.run(validateRecord, records[i]);
 
       if (validated.is_valid) {
         validRecords.push(validated);
@@ -148,7 +148,7 @@ const transformBatch = task(
 // Subtask: compute statistics from validated records
 const computeStatistics = task(
   { name: "computeStatistics", retry },
-  function computeStatistics(validRecords: ValidatedRecord[]) {
+  function computeStatistics(_ctx: TaskContext, validRecords: ValidatedRecord[]) {
     console.log(`[LOAD] Computing statistics for ${validRecords.length} records`);
 
     if (validRecords.length === 0) {
@@ -191,24 +191,24 @@ const computeStatistics = task(
 // Root task: orchestrates the full ETL pipeline
 task(
   { name: "runEtlPipeline", retry, timeoutSeconds: 300 },
-  async function runEtlPipeline(sourceFile: string) {
+  async function runEtlPipeline(ctx: TaskContext, sourceFile: string) {
     console.log("=".repeat(80));
     console.log("[PIPELINE] Starting ETL Pipeline");
     console.log(`[PIPELINE] Source: ${sourceFile}`);
     console.log("=".repeat(80));
 
     console.log("[PIPELINE] Stage 1/3: EXTRACT");
-    const rawRecords = await extractCsvData(sourceFile);
+    const rawRecords = await ctx.run(extractCsvData, sourceFile);
     console.log(`[PIPELINE] Extracted ${rawRecords.length} records`);
 
     console.log("[PIPELINE] Stage 2/3: TRANSFORM");
-    const transformResult = await transformBatch(rawRecords);
+    const transformResult = await ctx.run(transformBatch, rawRecords);
     console.log(
       `[PIPELINE] Transformation complete: ${(transformResult.success_rate * 100).toFixed(1)}% success rate`,
     );
 
     console.log("[PIPELINE] Stage 3/3: LOAD");
-    const statistics = await computeStatistics(transformResult.valid_records);
+    const statistics = await ctx.run(computeStatistics, transformResult.valid_records);
     console.log("[PIPELINE] Statistics computed");
 
     const pipelineResult = {
