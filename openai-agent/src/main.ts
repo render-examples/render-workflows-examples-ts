@@ -172,6 +172,10 @@ const SYSTEM_PROMPT =
 // Earlier turns are kept as plain user/assistant messages.
 type HistoryMessage = { role: "user" | "assistant"; content: string };
 
+// Upper bound on model -> tools -> model rounds in one turn, so a model that
+// keeps requesting tools can't loop forever.
+const MAX_TOOL_ROUNDS = 5;
+
 const callLlmWithTools = task(
   { name: "callLlmWithTools", retry },
   async function callLlmWithTools(
@@ -251,53 +255,58 @@ const agentTurn = task(
       };
     }
 
+    // The model can ask for tools several times in one turn, for example to
+    // look up an order and then refund it. Each round runs the requested tools
+    // and sends their results back, until the model answers in text or the
+    // turn reaches MAX_TOOL_ROUNDS.
+
     // Within this turn, inputItems also collects tool calls and their outputs.
     let inputItems: ResponseInputItem[] = [
       ...conversationHistory,
       { role: "user", content: userMessage },
     ];
-
-    const llmResponse = await ctx.run(callLlmWithTools, inputItems, tools);
-
-    if (!llmResponse.tool_calls.length) {
-      console.log("[AGENT TURN] No tool calls, returning response");
-      return {
-        response: llmResponse.output_text,
-        conversation_history: [
-          ...conversationHistory,
-          { role: "user" as const, content: userMessage },
-          { role: "assistant" as const, content: llmResponse.output_text },
-        ],
-        tool_calls: [],
-      };
-    }
-
-    console.log(`[AGENT TURN] Executing ${llmResponse.tool_calls.length} tool calls`);
     const toolResults: { tool: string; result: unknown }[] = [];
+    let reply: string | null = null;
 
-    // Send the model's own output back, followed by one function_call_output
-    // per call.
-    inputItems = [...inputItems, ...llmResponse.output_items];
-    for (const call of llmResponse.tool_calls) {
-      const result = await ctx.run(executeTool, call.name, JSON.parse(call.arguments));
-      toolResults.push({ tool: call.name, result });
-      inputItems.push({
-        type: "function_call_output",
-        call_id: call.call_id,
-        output: JSON.stringify(result),
-      });
+    for (let round = 1; round <= MAX_TOOL_ROUNDS; round++) {
+      const llmResponse = await ctx.run(callLlmWithTools, inputItems, tools);
+
+      if (!llmResponse.tool_calls.length) {
+        reply = llmResponse.output_text;
+        break;
+      }
+
+      console.log(
+        `[AGENT TURN] Round ${round}: executing ${llmResponse.tool_calls.length} tool calls`,
+      );
+
+      // Send the model's own output back, followed by one function_call_output
+      // per call.
+      inputItems = [...inputItems, ...llmResponse.output_items];
+      for (const call of llmResponse.tool_calls) {
+        const result = await ctx.run(executeTool, call.name, JSON.parse(call.arguments));
+        toolResults.push({ tool: call.name, result });
+        inputItems.push({
+          type: "function_call_output",
+          call_id: call.call_id,
+          output: JSON.stringify(result),
+        });
+      }
     }
 
-    const finalResponse = await ctx.run(callLlmWithTools, inputItems, tools);
+    if (reply === null) {
+      console.warn(`[AGENT TURN] Stopped after ${MAX_TOOL_ROUNDS} tool rounds`);
+      reply = "Sorry, I couldn't finish that request. Please try again or contact support.";
+    }
 
     console.log("[AGENT TURN] Agent turn complete");
 
     return {
-      response: finalResponse.output_text,
+      response: reply,
       conversation_history: [
         ...conversationHistory,
         { role: "user" as const, content: userMessage },
-        { role: "assistant" as const, content: finalResponse.output_text },
+        { role: "assistant" as const, content: reply },
       ],
       tool_calls: toolResults,
     };
