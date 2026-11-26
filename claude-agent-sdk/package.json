@@ -1,0 +1,24 @@
+{
+  "name": "claude-agent-sdk-workflow",
+  "version": "1.0.0",
+  "description": "Claude Agent SDK - Support-ticket triage agent run as a Render Workflows task (TypeScript)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.332",
+    "@anthropic-ai/sdk": "1.14.0",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@renderinc/sdk": "1.11.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
