@@ -1,7 +1,11 @@
 import "dotenv/config";
 import { task, type TaskContext } from "@renderinc/sdk/workflows";
 import OpenAI from "openai";
-import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
+import type {
+  ChatCompletionMessageFunctionToolCall,
+  ChatCompletionMessageParam,
+  ChatCompletionTool,
+} from "openai/resources/chat/completions";
 
 const retry = {
   maxRetries: 3,
@@ -182,11 +186,15 @@ const callLlmWithTools = task(
     } = { content: message.content, tool_calls: [] };
 
     if (message.tool_calls) {
-      result.tool_calls = message.tool_calls.map((tc) => ({
-        id: tc.id,
-        type: "function",
-        function: { name: tc.function.name, arguments: tc.function.arguments },
-      }));
+      // openai 7 types tool calls as function or custom calls. This example
+      // only defines function tools.
+      result.tool_calls = message.tool_calls
+        .filter((tc): tc is ChatCompletionMessageFunctionToolCall => tc.type === "function")
+        .map((tc) => ({
+          id: tc.id,
+          type: "function",
+          function: { name: tc.function.name, arguments: tc.function.arguments },
+        }));
       console.log(`[AGENT] Model requested ${result.tool_calls.length} tool calls`);
     }
 
