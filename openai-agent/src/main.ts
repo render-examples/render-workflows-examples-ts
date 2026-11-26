@@ -13,6 +13,16 @@ const retry = {
   backoffScaling: 2.0,
 };
 
+// Retries belong on the tasks that call outside systems: the OpenAI API and the
+// tool lookups. Tasks that only orchestrate subtasks don't retry. Retrying one
+// re-runs every subtask below it, which multiplies attempts and repeats side
+// effects, such as a refund that already went through.
+const noRetry = {
+  maxRetries: 0,
+  waitDurationMs: 1000,
+  backoffScaling: 1.5,
+};
+
 // Read the model from the environment so a retired model is a config change,
 // not a code change.
 const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-6.2-sol";
@@ -58,7 +68,7 @@ const getOrderStatus = task(
 // refund the order twice. Leaving retry unset doesn't guarantee that, since
 // the documented default is 3 retries, so turn retries off explicitly.
 const processRefund = task(
-  { name: "processRefund", retry: { maxRetries: 0, waitDurationMs: 1000, backoffScaling: 1.5 } },
+  { name: "processRefund", retry: noRetry },
   function processRefund(_ctx: TaskContext, orderId: string, reason: string) {
     console.log(`[TOOL] Processing refund for order: ${orderId}`);
     console.log(`[TOOL] Refund reason: ${reason}`);
@@ -242,7 +252,7 @@ const callLlmWithTools = task(
 );
 
 const executeTool = task(
-  { name: "executeTool", retry },
+  { name: "executeTool", retry: noRetry },
   async function executeTool(ctx: TaskContext, toolName: string, args: { [key: string]: string }) {
     console.log(`[AGENT] Executing tool: ${toolName}`);
 
@@ -267,7 +277,7 @@ const executeTool = task(
 
 
 const agentTurn = task(
-  { name: "agentTurn", retry },
+  { name: "agentTurn", retry: noRetry },
   async function agentTurn(
     ctx: TaskContext,
     userMessage: string,
@@ -352,7 +362,7 @@ const agentTurn = task(
 
 // Root task: multi-turn conversation
 task(
-  { name: "multiTurnConversation", retry, timeoutSeconds: 300 },
+  { name: "multiTurnConversation", retry: noRetry, timeoutSeconds: 300 },
   async function multiTurnConversation(ctx: TaskContext, ...messages: string[]) {
     console.log("=".repeat(80));
     console.log(`[CONVERSATION] Starting multi-turn conversation with ${messages.length} messages`);
