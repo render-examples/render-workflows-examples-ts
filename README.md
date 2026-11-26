@@ -10,7 +10,7 @@ Example projects demonstrating [Render Workflows](https://render.com/docs/workfl
 | [etl-job](./etl-job) | Extract, transform, load pipeline with retry handling |
 | [data-pipeline](./data-pipeline) | Multi-source data pipeline with enrichment and segmentation |
 | [file-processing](./file-processing) | File ingestion with validation, parsing, and transformation |
-| [openai-agent](./openai-agent) | AI-powered workflow using OpenAI for text analysis |
+| [openai-agent](./openai-agent) | Customer support agent whose loop runs as workflow tasks (OpenAI Responses API) |
 | [file-analyzer](./file-analyzer) | Two-service architecture: API gateway + workflow service for CSV analysis |
 
 ## Getting started
@@ -26,7 +26,7 @@ npm start
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 18+ (22+ for `openai-agent`)
 - A [Render](https://render.com) account (for deployment)
 
 ## Deploying to Render

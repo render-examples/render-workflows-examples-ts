@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "OpenAI Agent - AI customer support agent with Render Workflows (TypeScript)",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
@@ -11,9 +14,10 @@
   "dependencies": {
     "@renderinc/sdk": "1.11.0",
     "dotenv": "16.6.1",
-    "openai": "4.104.0"
+    "openai": "7.65.0"
   },
   "devDependencies": {
+    "@types/node": "22.20.7",
     "tsx": "4.23.15",
     "typescript": "5.9.3"
   }
