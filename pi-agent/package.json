@@ -1,0 +1,24 @@
+{
+  "name": "pi-agent-workflow",
+  "version": "1.0.0",
+  "description": "Pi coding agent - Clone a repo and fix a support ticket inside a Render Workflows task (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "1.6.1",
+    "@renderinc/sdk": "1.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
