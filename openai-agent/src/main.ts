@@ -25,7 +25,9 @@ function createOpenAIClient(): OpenAI {
       "Please set it in your Render environment variables.",
     );
   }
-  return new OpenAI({ apiKey });
+  // Render retries failed task runs, so turn off the client's own retries
+  // to keep one retry policy in charge.
+  return new OpenAI({ apiKey, maxRetries: 0 });
 }
 
 // ---- Tool Functions ----
@@ -176,6 +178,12 @@ type HistoryMessage = { role: "user" | "assistant"; content: string };
 // keeps requesting tools can't loop forever.
 const MAX_TOOL_ROUNDS = 5;
 
+// OpenAI errors that mean the request itself is wrong: unknown model, bad key,
+// invalid input. A retry can't fix them, so callLlmWithTools returns them as a
+// result instead of throwing. Rate limits (429), server errors (5xx) and
+// network errors still throw, so Render retries them.
+const PERMANENT_ERROR_STATUSES = new Set([400, 401, 403, 404, 422]);
+
 const callLlmWithTools = task(
   { name: "callLlmWithTools", retry },
   async function callLlmWithTools(
@@ -188,12 +196,21 @@ const callLlmWithTools = task(
 
     const client = createOpenAIClient();
 
-    const response = await client.responses.create({
-      model,
-      instructions: SYSTEM_PROMPT,
-      input: inputItems,
-      tools: toolDefs,
-    });
+    let response;
+    try {
+      response = await client.responses.create({
+        model,
+        instructions: SYSTEM_PROMPT,
+        input: inputItems,
+        tools: toolDefs,
+      });
+    } catch (error) {
+      if (error instanceof OpenAI.APIError && PERMANENT_ERROR_STATUSES.has(error.status ?? 0)) {
+        console.error(`[AGENT] OpenAI error ${error.status}, not retrying: ${error.message}`);
+        return { error: { status: error.status, message: error.message } };
+      }
+      throw error;
+    }
 
     const toolCalls = response.output
       .filter((item): item is ResponseFunctionToolCall => item.type === "function_call")
@@ -271,6 +288,15 @@ const agentTurn = task(
     for (let round = 1; round <= MAX_TOOL_ROUNDS; round++) {
       const llmResponse = await ctx.run(callLlmWithTools, inputItems, tools);
 
+      if ("error" in llmResponse) {
+        return {
+          response: null,
+          error: llmResponse.error,
+          conversation_history: conversationHistory,
+          tool_calls: toolResults,
+        };
+      }
+
       if (!llmResponse.tool_calls.length) {
         reply = llmResponse.output_text;
         break;
@@ -327,6 +353,7 @@ task(
       user: string;
       assistant: string | null;
       tool_calls: unknown[];
+      error?: unknown;
     }[] = [];
 
     for (let i = 0; i < messages.length; i++) {
@@ -334,13 +361,21 @@ task(
 
       const turnResult = await ctx.run(agentTurn, messages[i], conversationHistory);
 
-      responses.push({
+      const turn = {
         turn: i + 1,
         user: messages[i],
         assistant: turnResult.response,
         tool_calls: turnResult.tool_calls ?? [],
-      });
+      };
 
+      // A permanent error would repeat on every later turn, so stop here.
+      if ("error" in turnResult) {
+        responses.push({ ...turn, error: turnResult.error });
+        console.error(`[CONVERSATION] Stopping after turn ${i + 1}: ${JSON.stringify(turnResult.error)}`);
+        break;
+      }
+
+      responses.push(turn);
       conversationHistory = turnResult.conversation_history ?? [];
     }
 
