@@ -9,6 +9,10 @@ const retry = {
   backoffScaling: 2.0,
 };
 
+// Read the model from the environment so a retired model is a config change,
+// not a code change.
+const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-5.5";
+
 function createOpenAIClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -158,7 +162,7 @@ const callLlmWithTools = task(
     _ctx: TaskContext,
     messages: ChatCompletionMessageParam[],
     toolDefs: ChatCompletionTool[],
-    model: string = "gpt-4",
+    model: string = DEFAULT_MODEL,
   ) {
     console.log(`[AGENT] Calling ${model} with ${toolDefs.length} tools available`);
 
