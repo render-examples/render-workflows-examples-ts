@@ -1,0 +1,26 @@
+{
+  "name": "openai-agents-sdk-workflow",
+  "version": "1.0.0",
+  "description": "OpenAI Agents SDK - Support-ticket triage agent run as a Render Workflows task (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@openai/agents": "0.22.0",
+    "@renderinc/sdk": "1.11.0",
+    "openai": "7.65.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
