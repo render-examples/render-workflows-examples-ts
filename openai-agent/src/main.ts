@@ -196,7 +196,16 @@ const callLlmWithTools = task(
   ) {
     console.log(`[AGENT] Calling ${model} with ${toolDefs.length} tools available`);
 
-    const client = createOpenAIClient();
+    let client: OpenAI;
+    try {
+      client = createOpenAIClient();
+    } catch (error) {
+      // A missing API key is a setup problem. A retry can't fix it, so report
+      // it as a result like the permanent API errors below.
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[AGENT] Not retrying: ${message}`);
+      return { error: { status: null, message } };
+    }
 
     let response;
     try {
