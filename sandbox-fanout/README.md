@@ -82,7 +82,7 @@ A job's script reads `input.csv` from its working directory and writes its resul
    | Root Directory | `sandbox-fanout` (the folder that holds `package.json`). Leave it empty if this folder is the repository root. |
    | Build Command | `npm install && npm run build` |
    | Start Command | `node dist/main.js` |
-   | Region | Any. Sandboxes run in Oregon, so Oregon keeps file copies short. |
+   | Region | Any. Sandboxes currently run only in Oregon. |
    | Environment variables | `RENDER_API_KEY` and `RENDER_WORKSPACE_ID`, and optionally `MAX_SANDBOXES` and `JOB_TIMEOUT_SECONDS` |
 
 4. Create the workflow. Once the first version is ready, run `runBatch` from the Dashboard with the contents of `jobs.json` wrapped in a JSON array.
