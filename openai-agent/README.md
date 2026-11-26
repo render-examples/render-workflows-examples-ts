@@ -1,6 +1,6 @@
-# OpenAI Agent
+# OpenAI Agent Loop as Workflow Tasks
 
-A customer support agent that runs on Render Workflows. Each conversation turn is a task, and every model call and tool call runs as its own subtask through the OpenAI Responses API.
+A customer support agent built on the OpenAI Responses API with the plain `openai` package. The agent loop is written by hand: each conversation turn is a task, and every model call and tool call runs as its own subtask, so each step is retried and shows up in the Dashboard on its own.
 
 ## What you'll learn
 
