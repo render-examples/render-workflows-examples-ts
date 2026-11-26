@@ -12,6 +12,7 @@ Example projects demonstrating [Render Workflows](https://render.com/docs/workfl
 | [file-processing](./file-processing) | File ingestion with validation, parsing, and transformation |
 | [openai-agent](./openai-agent) | AI-powered workflow using OpenAI for text analysis |
 | [file-analyzer](./file-analyzer) | Two-service architecture: API gateway + workflow service for CSV analysis |
+| [ai-chat-turns](./ai-chat-turns) | Chat app where each turn is a workflow task, with an Express API and Postgres |
 
 ## Getting started
 
@@ -26,7 +27,7 @@ npm start
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 18+ (22+ for `ai-chat-turns`)
 - A [Render](https://render.com) account (for deployment)
 
 ## Deploying to Render
