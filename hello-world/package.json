@@ -10,6 +10,6 @@
     "@renderinc/sdk": "1.11.0"
   },
   "devDependencies": {
-    "tsx": "^4.20.2"
+    "tsx": "4.23.15"
   }
 }
