@@ -136,7 +136,9 @@ function runTool(command: string, args: string[]): Promise<string> {
 
     child.on("close", (code, signal) => {
       if (signal) {
-        // Killed by a signal, for example SIGKILL from the out-of-memory killer.
+        // Killed by a signal, for example SIGKILL from the kernel's out-of-memory
+        // killer. (If the whole run uses up its plan's memory, Render ends the
+        // attempt instead and retries it the same way.)
         // The input may be fine, so throw and let Render retry the document.
         reject(new Error(`${command} was killed by ${signal}`));
       } else if (code !== 0) {
