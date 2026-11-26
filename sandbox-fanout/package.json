@@ -1,0 +1,20 @@
+{
+  "name": "sandbox-fanout-workflow",
+  "version": "1.0.0",
+  "description": "Sandbox Fan-out - Run untrusted jobs in parallel, one Render Sandbox per job, from a Render Workflows task (TypeScript)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
