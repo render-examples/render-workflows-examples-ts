@@ -54,9 +54,11 @@ const getOrderStatus = task(
   },
 );
 
-// No retry: processing a refund is non-idempotent
+// A refund isn't idempotent: retrying after a failure partway through could
+// refund the order twice. Leaving retry unset doesn't guarantee that, since
+// the documented default is 3 retries, so turn retries off explicitly.
 const processRefund = task(
-  { name: "processRefund" },
+  { name: "processRefund", retry: { maxRetries: 0, waitDurationMs: 1000, backoffScaling: 1.5 } },
   function processRefund(_ctx: TaskContext, orderId: string, reason: string) {
     console.log(`[TOOL] Processing refund for order: ${orderId}`);
     console.log(`[TOOL] Refund reason: ${reason}`);
