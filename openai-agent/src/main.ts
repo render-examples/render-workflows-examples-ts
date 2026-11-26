@@ -2,10 +2,10 @@ import "dotenv/config";
 import { task, type TaskContext } from "@renderinc/sdk/workflows";
 import OpenAI from "openai";
 import type {
-  ChatCompletionMessageFunctionToolCall,
-  ChatCompletionMessageParam,
-  ChatCompletionTool,
-} from "openai/resources/chat/completions";
+  FunctionTool,
+  ResponseFunctionToolCall,
+  ResponseInputItem,
+} from "openai/resources/responses/responses";
 
 const retry = {
   maxRetries: 3,
@@ -15,7 +15,7 @@ const retry = {
 
 // Read the model from the environment so a retired model is a config change,
 // not a code change.
-const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-5.5";
+const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-6.2-sol";
 
 function createOpenAIClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -114,91 +114,98 @@ const searchKnowledgeBase = task(
 
 // ---- Agent Tasks ----
 
-const tools: ChatCompletionTool[] = [
+// Tool definitions in the Responses API format. strict: true makes the model's
+// arguments always match the schema, which requires every property to be
+// listed in "required" and additionalProperties to be false.
+const tools: FunctionTool[] = [
   {
     type: "function",
-    function: {
-      name: "get_order_status",
-      description: "Look up the status of a customer order by order ID",
-      parameters: {
-        type: "object",
-        properties: {
-          order_id: { type: "string", description: "The order ID (e.g., ORD-001)" },
-        },
-        required: ["order_id"],
+    name: "get_order_status",
+    description: "Look up the status of a customer order by order ID",
+    strict: true,
+    parameters: {
+      type: "object",
+      properties: {
+        order_id: { type: "string", description: "The order ID (e.g., ORD-001)" },
       },
+      required: ["order_id"],
+      additionalProperties: false,
     },
   },
   {
     type: "function",
-    function: {
-      name: "process_refund",
-      description: "Process a refund for an order",
-      parameters: {
-        type: "object",
-        properties: {
-          order_id: { type: "string", description: "The order ID to refund" },
-          reason: { type: "string", description: "Reason for the refund" },
-        },
-        required: ["order_id", "reason"],
+    name: "process_refund",
+    description: "Process a refund for an order",
+    strict: true,
+    parameters: {
+      type: "object",
+      properties: {
+        order_id: { type: "string", description: "The order ID to refund" },
+        reason: { type: "string", description: "Reason for the refund" },
       },
+      required: ["order_id", "reason"],
+      additionalProperties: false,
     },
   },
   {
     type: "function",
-    function: {
-      name: "search_knowledge_base",
-      description: "Search the knowledge base for help articles and information",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "The search query" },
-        },
-        required: ["query"],
+    name: "search_knowledge_base",
+    description: "Search the knowledge base for help articles and information",
+    strict: true,
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The search query" },
       },
+      required: ["query"],
+      additionalProperties: false,
     },
   },
 ];
+
+const SYSTEM_PROMPT =
+  "You are a helpful customer support agent. You can look up order " +
+  "status, process refunds, and search the knowledge base for information. " +
+  "Be polite, professional, and helpful. Use tools when necessary to " +
+  "assist the customer.";
+
+// Earlier turns are kept as plain user/assistant messages.
+type HistoryMessage = { role: "user" | "assistant"; content: string };
 
 const callLlmWithTools = task(
   { name: "callLlmWithTools", retry },
   async function callLlmWithTools(
     _ctx: TaskContext,
-    messages: ChatCompletionMessageParam[],
-    toolDefs: ChatCompletionTool[],
+    inputItems: ResponseInputItem[],
+    toolDefs: FunctionTool[],
     model: string = DEFAULT_MODEL,
   ) {
     console.log(`[AGENT] Calling ${model} with ${toolDefs.length} tools available`);
 
     const client = createOpenAIClient();
 
-    const response = await client.chat.completions.create({
+    const response = await client.responses.create({
       model,
-      messages,
+      instructions: SYSTEM_PROMPT,
+      input: inputItems,
       tools: toolDefs,
-      tool_choice: "auto",
     });
 
-    const message = response.choices[0].message;
-    const result: {
-      content: string | null;
-      tool_calls: { id: string; type: string; function: { name: string; arguments: string } }[];
-    } = { content: message.content, tool_calls: [] };
+    const toolCalls = response.output
+      .filter((item): item is ResponseFunctionToolCall => item.type === "function_call")
+      .map((item) => ({ call_id: item.call_id, name: item.name, arguments: item.arguments }));
 
-    if (message.tool_calls) {
-      // openai 7 types tool calls as function or custom calls. This example
-      // only defines function tools.
-      result.tool_calls = message.tool_calls
-        .filter((tc): tc is ChatCompletionMessageFunctionToolCall => tc.type === "function")
-        .map((tc) => ({
-          id: tc.id,
-          type: "function",
-          function: { name: tc.function.name, arguments: tc.function.arguments },
-        }));
-      console.log(`[AGENT] Model requested ${result.tool_calls.length} tool calls`);
+    if (toolCalls.length) {
+      console.log(`[AGENT] Model requested ${toolCalls.length} tool calls`);
     }
 
-    return result;
+    return {
+      output_text: response.output_text,
+      tool_calls: toolCalls,
+      // The model's output items go back into the next call's input so the
+      // model can see which tool calls it made.
+      output_items: response.output as ResponseInputItem[],
+    };
   },
 );
 
@@ -226,12 +233,13 @@ const executeTool = task(
   },
 );
 
+
 const agentTurn = task(
   { name: "agentTurn", retry },
   async function agentTurn(
     ctx: TaskContext,
     userMessage: string,
-    conversationHistory: ChatCompletionMessageParam[] = [],
+    conversationHistory: HistoryMessage[] = [],
   ) {
     console.log("[AGENT TURN] Starting agent turn");
 
@@ -243,31 +251,22 @@ const agentTurn = task(
       };
     }
 
-    const systemMessage: ChatCompletionMessageParam = {
-      role: "system",
-      content:
-        "You are a helpful customer support agent. You can look up order " +
-        "status, process refunds, and search the knowledge base for information. " +
-        "Be polite, professional, and helpful. Use tools when necessary to " +
-        "assist the customer.",
-    };
-
-    const messages: ChatCompletionMessageParam[] = [
-      systemMessage,
+    // Within this turn, inputItems also collects tool calls and their outputs.
+    let inputItems: ResponseInputItem[] = [
       ...conversationHistory,
       { role: "user", content: userMessage },
     ];
 
-    const llmResponse = await ctx.run(callLlmWithTools, messages, tools);
+    const llmResponse = await ctx.run(callLlmWithTools, inputItems, tools);
 
     if (!llmResponse.tool_calls.length) {
       console.log("[AGENT TURN] No tool calls, returning response");
       return {
-        response: llmResponse.content,
+        response: llmResponse.output_text,
         conversation_history: [
           ...conversationHistory,
           { role: "user" as const, content: userMessage },
-          { role: "assistant" as const, content: llmResponse.content },
+          { role: "assistant" as const, content: llmResponse.output_text },
         ],
         tool_calls: [],
       };
@@ -276,45 +275,29 @@ const agentTurn = task(
     console.log(`[AGENT TURN] Executing ${llmResponse.tool_calls.length} tool calls`);
     const toolResults: { tool: string; result: unknown }[] = [];
 
-    for (const toolCall of llmResponse.tool_calls) {
-      const result = await ctx.run(
-        executeTool,
-        toolCall.function.name,
-        JSON.parse(toolCall.function.arguments),
-      );
-      toolResults.push({ tool: toolCall.function.name, result });
+    // Send the model's own output back, followed by one function_call_output
+    // per call.
+    inputItems = [...inputItems, ...llmResponse.output_items];
+    for (const call of llmResponse.tool_calls) {
+      const result = await ctx.run(executeTool, call.name, JSON.parse(call.arguments));
+      toolResults.push({ tool: call.name, result });
+      inputItems.push({
+        type: "function_call_output",
+        call_id: call.call_id,
+        output: JSON.stringify(result),
+      });
     }
 
-    const toolMessages: ChatCompletionMessageParam[] = llmResponse.tool_calls.map((tc, i) => ({
-      role: "tool" as const,
-      tool_call_id: tc.id,
-      content: JSON.stringify(toolResults[i].result),
-    }));
-
-    const finalMessages: ChatCompletionMessageParam[] = [
-      ...messages,
-      {
-        role: "assistant" as const,
-        content: llmResponse.content,
-        tool_calls: llmResponse.tool_calls.map((tc) => ({
-          id: tc.id,
-          type: "function" as const,
-          function: { name: tc.function.name, arguments: tc.function.arguments },
-        })),
-      },
-      ...toolMessages,
-    ];
-
-    const finalResponse = await ctx.run(callLlmWithTools, finalMessages, tools);
+    const finalResponse = await ctx.run(callLlmWithTools, inputItems, tools);
 
     console.log("[AGENT TURN] Agent turn complete");
 
     return {
-      response: finalResponse.content,
+      response: finalResponse.output_text,
       conversation_history: [
         ...conversationHistory,
         { role: "user" as const, content: userMessage },
-        { role: "assistant" as const, content: finalResponse.content },
+        { role: "assistant" as const, content: finalResponse.output_text },
       ],
       tool_calls: toolResults,
     };
@@ -329,8 +312,13 @@ task(
     console.log(`[CONVERSATION] Starting multi-turn conversation with ${messages.length} messages`);
     console.log("=".repeat(80));
 
-    let conversationHistory: ChatCompletionMessageParam[] = [];
-    const responses: { turn: number; user: string; assistant: string | null; tool_calls: unknown[] }[] = [];
+    let conversationHistory: HistoryMessage[] = [];
+    const responses: {
+      turn: number;
+      user: string;
+      assistant: string | null;
+      tool_calls: unknown[];
+    }[] = [];
 
     for (let i = 0; i < messages.length; i++) {
       console.log(`[CONVERSATION] Turn ${i + 1}/${messages.length}`);
