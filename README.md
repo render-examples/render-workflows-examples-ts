@@ -12,6 +12,7 @@ Example projects demonstrating [Render Workflows](https://render.com/docs/workfl
 | [file-processing](./file-processing) | File ingestion with validation, parsing, and transformation |
 | [openai-agent](./openai-agent) | AI-powered workflow using OpenAI for text analysis |
 | [file-analyzer](./file-analyzer) | Two-service architecture: API gateway + workflow service for CSV analysis |
+| [browser-screenshots](./browser-screenshots) | Check many web pages with headless Chromium (Playwright), one task run per URL with a concurrency cap |
 
 ## Getting started
 
