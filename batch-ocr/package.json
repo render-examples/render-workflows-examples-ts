@@ -1,0 +1,20 @@
+{
+  "name": "batch-ocr-workflow",
+  "version": "1.0.0",
+  "description": "Batch OCR - OCR over many scanned PDFs with Tesseract and Poppler on a Docker-based Render Workflows service (TypeScript)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
