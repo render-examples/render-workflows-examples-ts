@@ -12,6 +12,7 @@ Example projects demonstrating [Render Workflows](https://render.com/docs/workfl
 | [file-processing](./file-processing) | File ingestion with validation, parsing, and transformation |
 | [openai-agent](./openai-agent) | AI-powered workflow using OpenAI for text analysis |
 | [file-analyzer](./file-analyzer) | Two-service architecture: API gateway + workflow service for CSV analysis |
+| [monte-carlo](./monte-carlo) | Price an option with tens of millions of simulated paths, fanned out across 8 CPU / 32 GB task runs |
 
 ## Getting started
 
