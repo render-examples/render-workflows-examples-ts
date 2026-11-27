@@ -69,9 +69,9 @@ Retry policy in this example:
 2. In a separate terminal, trigger task runs:
 
     ```bash
-    render workflows tasks start calculateSquare --local --input='[5]'
-    render workflows tasks start sumSquares --local --input='[3,4]'
-    render workflows tasks start flipCoin --local --input='[]'
+    render workflows tasks runs start calculateSquare --local --input='[5]'
+    render workflows tasks runs start sumSquares --local --input='[3,4]'
+    render workflows tasks runs start flipCoin --local --input='[]'
     ```
 
 Expected behavior:

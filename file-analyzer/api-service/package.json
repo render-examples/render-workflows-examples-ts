@@ -9,15 +9,15 @@
     "dev": "tsx src/main.ts"
   },
   "dependencies": {
-    "@renderinc/sdk": "latest",
-    "dotenv": "^16.4.7",
-    "express": "^5.1.0",
-    "multer": "^1.4.5-lts.2"
+    "@renderinc/sdk": "1.11.0",
+    "dotenv": "16.6.1",
+    "express": "5.3.0",
+    "multer": "1.4.5-lts.2"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0",
-    "@types/multer": "^1.4.12",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "@types/express": "5.0.6",
+    "@types/multer": "1.4.12",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
   }
 }

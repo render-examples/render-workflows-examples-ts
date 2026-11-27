@@ -9,11 +9,11 @@
     "dev": "tsx src/main.ts"
   },
   "dependencies": {
-    "@renderinc/sdk": "1.0.0",
-    "dotenv": "^16.4.7"
+    "@renderinc/sdk": "1.11.0",
+    "dotenv": "16.6.1"
   },
   "devDependencies": {
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
   }
 }
