@@ -1,0 +1,26 @@
+{
+  "name": "webhook-processing",
+  "version": "1.0.0",
+  "description": "Webhook processing - a GitHub webhook receiver that verifies signatures, acks fast, and processes each delivery once in a Render Workflows task (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/workflow.js",
+    "receiver": "node dist/receiver.js",
+    "send": "node dist/sendDelivery.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0",
+    "express": "5.3.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.7",
+    "@types/pg": "8.23.1",
+    "typescript": "5.9.3"
+  }
+}
