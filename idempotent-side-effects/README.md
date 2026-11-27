@@ -123,7 +123,7 @@ The workflow creates its table on first use. Once the first version is ready, ru
 
 ## Trigger from another service
 
-`src/client.ts` starts `handleRefund` for the first ticket, twice, with the same idempotency key:
+`src/client.ts` starts `handleRefund` for the first ticket, twice, with the same idempotency key, and waits for the result:
 
 ```bash
 export RENDER_API_KEY=your-render-api-key
@@ -139,12 +139,13 @@ import { Render } from "@renderinc/sdk";
 
 const render = new Render(); // reads RENDER_API_KEY
 
-const run = await render.workflows.runTask(`${SLUG}/handleRefund`, [ticket], {
+const run = await render.workflows.startTask(`${SLUG}/handleRefund`, [ticket], {
   idempotencyKey: `handleRefund:${ticket.id}`,
 });
+console.log(run.taskRunId);
 ```
 
-This key works one level up from the credit's key. Starting a run again with the same key within 24 hours returns the first run, so both calls print the same run ID and the model runs once. On the local task server, which doesn't apply these keys, the two calls start two runs, and the credit's key still keeps it to one credit.
+This key works one level up from the credit's key. Starting a run again with the same key within 24 hours returns the first run, so both calls print the same run ID and the model runs once. The client then waits by checking the run's status with `getTaskRun`, not with `runTask`: a repeated key can return a run that already finished, and waiting on a finished run's events doesn't return. On the local task server, which doesn't apply these keys, the two calls start two runs, and the credit's key still keeps it to one credit.
 
 ## Limits and gotchas
 

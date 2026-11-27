@@ -5,6 +5,7 @@
  * (it defaults to idempotent-side-effects).
  */
 import { readFileSync } from "node:fs";
+import { setTimeout as sleep } from "node:timers/promises";
 import { Render } from "@renderinc/sdk";
 
 const SLUG = process.env.WORKFLOW_SLUG ?? "idempotent-side-effects";
@@ -18,17 +19,24 @@ const render = new Render();
 // key comes from the account and order. If this script runs again for the
 // same ticket within 24 hours (a retried webhook, a double click), Render
 // returns the first run instead of starting another one.
-let run;
-for (const call of [1, 2]) {
-  run = await render.workflows.runTask(`${SLUG}/handleRefund`, [ticket], {
-    idempotencyKey: `handleRefund:${ticket.id}`,
-  });
-  console.log(`Call ${call}: run ${run.id} ended as ${run.status}`);
+const key = `handleRefund:${ticket.id}`;
+const first = await render.workflows.startTask(`${SLUG}/handleRefund`, [ticket], { idempotencyKey: key });
+const second = await render.workflows.startTask(`${SLUG}/handleRefund`, [ticket], { idempotencyKey: key });
+console.log(`Call 1: run ${first.taskRunId}`);
+console.log(`Call 2: run ${second.taskRunId}`);
+
+// Wait by checking the run's status. A repeated key can return a run that
+// finished earlier, and a finished run has no more events to wait for.
+const DONE = new Set(["completed", "succeeded", "failed", "canceled"]);
+let run = await render.workflows.getTaskRun(first.taskRunId);
+while (!DONE.has(run.status)) {
+  await sleep(1000);
+  run = await render.workflows.getTaskRun(first.taskRunId);
 }
 
-if (run!.status !== "completed") {
-  throw new Error(`Run ${run!.id} ended as ${run!.status}`);
+if (run.status !== "completed" && run.status !== "succeeded") {
+  throw new Error(`Run ${run.id} ended as ${run.status}`);
 }
 
 // results is an array holding the task's return value.
-console.log(JSON.stringify(run!.results[0], null, 2));
+console.log(JSON.stringify(run.results[0], null, 2));
