@@ -1,0 +1,25 @@
+{
+  "name": "idempotent-side-effects",
+  "version": "1.0.0",
+  "description": "Idempotent side effects - retry an LLM call without repeating a refund credit, on Render Workflows (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0",
+    "openai": "7.65.0",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "@types/pg": "8.23.1",
+    "typescript": "5.9.3"
+  }
+}
