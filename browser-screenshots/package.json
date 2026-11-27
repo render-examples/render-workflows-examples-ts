@@ -1,0 +1,24 @@
+{
+  "name": "browser-screenshots-workflow",
+  "version": "1.0.0",
+  "description": "Browser screenshots - check many web pages with headless Chromium, one task run per URL (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0",
+    "playwright": "1.65.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
