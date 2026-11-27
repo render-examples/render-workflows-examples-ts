@@ -1,0 +1,20 @@
+{
+  "name": "order-saga-workflow",
+  "version": "1.0.0",
+  "description": "Order saga - Checkout flow with compensating steps, built with Render Workflows flows (TypeScript)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
