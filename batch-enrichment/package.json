@@ -1,0 +1,26 @@
+{
+  "name": "batch-enrichment-workflow",
+  "version": "1.0.0",
+  "description": "Batch CSV enrichment through the OpenAI Batch API, with a long durable wait on Render Workflows (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0",
+    "csv-parse": "7.0.3",
+    "openai": "7.65.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
