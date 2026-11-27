@@ -1,0 +1,28 @@
+{
+  "name": "pdf-extraction-workflow",
+  "version": "1.0.0",
+  "description": "PDF Extraction - Extract structured invoice fields from text-layer PDFs with an LLM in a Render Workflows task (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0",
+    "openai": "7.65.0",
+    "pg": "8.23.1",
+    "unpdf": "2.2.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
