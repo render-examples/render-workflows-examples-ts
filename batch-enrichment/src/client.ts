@@ -21,6 +21,10 @@ type EnrichResult = {
   error?: string;
 };
 
+// A run is finished once it reaches one of these. While enrichCsv waits on a
+// chained run, its status is "paused", so don't treat that as finished.
+const FINISHED = new Set(["completed", "failed", "canceled"]);
+
 const SLUG = process.env.WORKFLOW_SLUG ?? "batch-enrichment";
 const csvUrl = process.argv[2];
 
@@ -35,7 +39,7 @@ console.log(`Started run ${started.taskRunId}. Store this ID; you can check it f
 // Check every 30 seconds. In a real app, store the ID and check from a cron
 // job or a status page instead of looping.
 let details = await render.workflows.getTaskRun(started.taskRunId);
-while (details.status === "pending" || details.status === "running") {
+while (!FINISHED.has(details.status)) {
   console.log(`  ${details.status}...`);
   await sleep(30_000);
   details = await render.workflows.getTaskRun(started.taskRunId);
