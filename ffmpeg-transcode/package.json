@@ -1,0 +1,23 @@
+{
+  "name": "ffmpeg-transcode-workflow",
+  "version": "1.0.0",
+  "description": "ffmpeg transcode - HLS renditions and thumbnails, one big-plan task run per video (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
