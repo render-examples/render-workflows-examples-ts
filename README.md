@@ -12,6 +12,7 @@ Example projects demonstrating [Render Workflows](https://render.com/docs/workfl
 | [file-processing](./file-processing) | File ingestion with validation, parsing, and transformation |
 | [openai-agent](./openai-agent) | AI-powered workflow using OpenAI for text analysis |
 | [file-analyzer](./file-analyzer) | Two-service architecture: API gateway + workflow service for CSV analysis |
+| [voice-pipeline](./voice-pipeline) | Answer a recorded voice message with speech-to-text, an LLM reply and text-to-speech, each as its own task |
 
 ## Getting started
 
@@ -26,7 +27,7 @@ npm start
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 18+ (22+ for `voice-pipeline`)
 - A [Render](https://render.com) account (for deployment)
 
 ## Deploying to Render
