@@ -12,6 +12,7 @@ Example projects demonstrating [Render Workflows](https://render.com/docs/workfl
 | [file-processing](./file-processing) | File ingestion with validation, parsing, and transformation |
 | [openai-agent](./openai-agent) | AI-powered workflow using OpenAI for text analysis |
 | [file-analyzer](./file-analyzer) | Two-service architecture: API gateway + workflow service for CSV analysis |
+| [webhook-processing](./webhook-processing) | GitHub webhook receiver that verifies signatures, acks fast, and processes each delivery exactly once in a retrying task |
 
 ## Getting started
 
