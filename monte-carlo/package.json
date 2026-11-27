@@ -1,0 +1,22 @@
+{
+  "name": "monte-carlo-workflow",
+  "version": "1.0.0",
+  "description": "Monte Carlo option pricing - millions of paths fanned out across 8 CPU task runs (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0",
+    "pure-rand": "8.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "typescript": "5.9.3"
+  }
+}
