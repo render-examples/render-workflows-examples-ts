@@ -1,0 +1,22 @@
+{
+  "name": "postgres-backfill-workflow",
+  "version": "1.0.0",
+  "description": "Resumable Postgres backfill as a Render Workflows flow, one checkpointed step per chunk (TypeScript)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
