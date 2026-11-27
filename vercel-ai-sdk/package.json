@@ -1,0 +1,26 @@
+{
+  "name": "vercel-ai-sdk-workflow",
+  "version": "1.0.0",
+  "description": "Vercel AI SDK - Support-ticket triage agent whose tool loop runs as a Render Workflows task (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "4.0.125",
+    "@renderinc/sdk": "1.11.0",
+    "ai": "7.0.183",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
