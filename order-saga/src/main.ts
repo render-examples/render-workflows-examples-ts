@@ -98,18 +98,25 @@ function refundPayment(charge: Extract<svc.Charge, { ok: true }>): svc.Refund {
 /**
  * Kill this process once, right after the charge, to force a replay.
  *
+ * Only with SIMULATE_CRASH=1, for the local task server: it replays a flow
+ * whose process exits. On Render, a process that exits on its own fails the
+ * run; Render replays a flow when the instance running it fails.
+ *
  * The first time, this runs in the same process that charged the card, so it
- * exits without reporting back. Render sees the instance die and replays the
- * flow on a new one. In the replay, reserveInventory and chargePayment return
- * their recorded results (with the first process's ID), and this step runs
- * again in the new process, which has a different ID, so it returns.
+ * exits without reporting back, and the flow replays in a new process. In the
+ * replay, reserveInventory and chargePayment return their recorded results
+ * (with the first process's ID), and this step runs again in the new process,
+ * which has a different ID, so it returns.
  */
 function simulateCrash(chargedInProcess: string) {
+  if (process.env.SIMULATE_CRASH !== "1") {
+    return { crashed: false, process: svc.PROCESS_ID };
+  }
   if (chargedInProcess === svc.PROCESS_ID) {
     console.warn(`[${svc.PROCESS_ID}] simulateCrash: exiting the process mid-flow`);
     process.exit(1);
   }
-  return { charged_in: chargedInProcess, process: svc.PROCESS_ID };
+  return { crashed: true, charged_in: chargedInProcess, process: svc.PROCESS_ID };
 }
 
 // ============================================================================

@@ -18,6 +18,11 @@ type CheckoutResult = {
   steps: Record<string, { process?: string; idempotent_replayed?: boolean }>;
 };
 
+// The order steps can run in, for printing. Results come back with sorted keys.
+const STEP_ORDER = [
+  "reserveInventory", "chargePayment", "simulateCrash", "createShipment", "refundPayment", "releaseInventory",
+];
+
 const SLUG = process.env.WORKFLOW_SLUG ?? "order-saga";
 const orders: { order_id: string }[] = JSON.parse(readFileSync(new URL("../orders.json", import.meta.url), "utf-8"));
 
@@ -63,7 +68,9 @@ for (const [orderId, run] of finished) {
   }
   console.log(line);
   console.log(`  flow attempts: ${run.attempts.length}`);
-  for (const [name, step] of Object.entries(result.steps)) {
+  for (const name of STEP_ORDER) {
+    const step = result.steps[name];
+    if (!step) continue;
     const note = step.idempotent_replayed ? " (idempotent replay)" : "";
     console.log(`  ${name.padEnd(18)} ran in process ${step.process ?? "-"}${note}`);
   }
