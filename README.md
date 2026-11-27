@@ -12,6 +12,7 @@ Example projects demonstrating [Render Workflows](https://render.com/docs/workfl
 | [file-processing](./file-processing) | File ingestion with validation, parsing, and transformation |
 | [openai-agent](./openai-agent) | AI-powered workflow using OpenAI for text analysis |
 | [file-analyzer](./file-analyzer) | Two-service architecture: API gateway + workflow service for CSV analysis |
+| [idempotent-side-effects](./idempotent-side-effects) | Retry an LLM call without repeating a refund credit, with idempotency keys and Postgres |
 
 ## Getting started
 
@@ -26,7 +27,7 @@ npm start
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 18+ (22+ for `idempotent-side-effects`)
 - A [Render](https://render.com) account (for deployment)
 
 ## Deploying to Render
