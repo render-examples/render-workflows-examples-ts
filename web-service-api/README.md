@@ -160,7 +160,7 @@ details.status;      // "pending", "running", "completed", "failed", ...
 details.results[0];  // buildReport's return value, once completed
 ```
 
-`getTaskRun` throws a `ClientError` with `statusCode === 404` for an unknown run ID.
+For a run ID it doesn't know, Render answers `400 Bad Request`, so `getTaskRun` throws a `ClientError` with `statusCode === 400`. The API turns that, and `404`, into its own `404`.
 
 ## Limits and gotchas
 

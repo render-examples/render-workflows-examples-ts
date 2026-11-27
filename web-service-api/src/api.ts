@@ -68,6 +68,7 @@ app.get("/jobs/:runId", async (req, res) => {
   try {
     details = await render.workflows.getTaskRun(runId);
   } catch (error) {
+    // Render answers 400 for a run ID it doesn't know.
     if (error instanceof ClientError && (error.statusCode === 400 || error.statusCode === 404)) {
       res.status(404).json({ detail: "No such job" });
       return;
