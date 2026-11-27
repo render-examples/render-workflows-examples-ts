@@ -1,0 +1,27 @@
+{
+  "name": "product-image-import-workflow",
+  "version": "1.0.0",
+  "description": "Product image import - resized WebP/AVIF variants, blurhash and AI alt text per image (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "client": "node dist/client.js"
+  },
+  "dependencies": {
+    "@renderinc/sdk": "1.11.0",
+    "blurhash": "2.0.5",
+    "openai": "7.65.0",
+    "sharp": "0.35.5",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
