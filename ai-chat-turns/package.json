@@ -1,0 +1,29 @@
+{
+  "name": "ai-chat-turns",
+  "version": "1.0.0",
+  "description": "AI Chat Turns - chat app where each turn runs as a Render Workflows task (TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/workflow.js",
+    "api": "node dist/api.js",
+    "chat": "node dist/chat.js"
+  },
+  "dependencies": {
+    "@openai/agents": "0.22.0",
+    "@renderinc/sdk": "1.11.0",
+    "express": "5.3.0",
+    "openai": "7.65.0",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.7",
+    "@types/pg": "8.23.1",
+    "typescript": "5.9.3"
+  }
+}
